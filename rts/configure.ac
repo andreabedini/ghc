@@ -24,7 +24,7 @@ AC_PREREQ([2.69])
 
 AC_CONFIG_FILES([ghcplatform.h.top])
 
-AC_CONFIG_HEADERS([ghcautoconf.h.autoconf])
+AC_CONFIG_HEADERS([include/ghcautoconf.h])
 
 AC_ARG_WITH([compiler],
    [AS_HELP_STRING([--with-compier],
@@ -465,26 +465,6 @@ AS_IF(
 
 [
 cat $srcdir/ghcplatform.h.bottom               >> include/ghcplatform.h
-]
-
-dnl ######################################################################
-dnl Generate ghcautoconf.h
-dnl ######################################################################
-
-[
-touch include/ghcautoconf.h
-> include/ghcautoconf.h
-
-echo "#if !defined(__GHCAUTOCONF_H__)" >> include/ghcautoconf.h
-echo "#define __GHCAUTOCONF_H__" >> include/ghcautoconf.h
-# Copy the contents of ghcautoconf.h.autoconf, turning '#define PACKAGE_FOO
-# "blah"' into '/* #undef PACKAGE_FOO */' to avoid clashes.
-cat ghcautoconf.h.autoconf | sed \
-   -e 's,^\([	 ]*\)#[	 ]*define[	 ][	 ]*\(PACKAGE_[A-Z]*\)[	 ][ 	]*".*".*$,\1/* #undef \2 */,' \
-   -e '/__GLASGOW_HASKELL/d' \
-   -e '/REMOVE ME/d' \
-   >> include/ghcautoconf.h
-echo "#endif /* __GHCAUTOCONF_H__ */" >> include/ghcautoconf.h
 ]
 
 dnl ######################################################################
