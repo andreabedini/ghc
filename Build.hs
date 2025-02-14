@@ -381,42 +381,6 @@ prepareGhcSources opts dst = do
   cp "utils/fs/fs.*" (dst </> "libraries/rts/")
   cp "utils/fs/fs.*" (dst </> "utils/unlit/")
 
-  -- substitute variables in files
-  let subst fin fout rs = do
-        t <- Text.readFile fin
-        Text.writeFile fout (List.foldl' (\v (needle,rep) -> Text.replace needle rep v) t rs)
-  let subst_in f = subst (f <.> "in") f
-  let common_substs =
-        [ (,) "@ProjectVersion@"       (gboVersion opts)
-        , (,) "@ProjectVersionMunged@" (gboVersionMunged opts)
-        , (,) "@ProjectVersionForLib@" (gboVersionForLib opts)
-        , (,) "@ProjectPatchLevel1@"   (gboVersionPatchLevel1 opts)
-        , (,) "@ProjectPatchLevel2@"   (gboVersionPatchLevel2 opts)
-        , (,) "@ProjectVersionInt@"    (gboVersionInt opts)
-        ]
-      boot_th_substs =
-        [ (,) "@Suffix@"     ""
-        , (,) "@SourceRoot@" "."
-        ]
-
-  subst_in (dst </> "ghc-bin/ghc-bin.cabal") common_substs
-  subst_in (dst </> "libraries/ghc/ghc.cabal") common_substs
-  subst_in (dst </> "libraries/ghc-boot/ghc-boot.cabal") common_substs
-  subst_in (dst </> "libraries/ghc-boot-th/ghc-boot-th.cabal") (common_substs ++ boot_th_substs)
-  subst_in (dst </> "libraries/ghc-heap/ghc-heap.cabal") common_substs
-  subst_in (dst </> "libraries/template-haskell/template-haskell.cabal") common_substs
-  subst_in (dst </> "libraries/ghci/ghci.cabal") common_substs
-
-  subst_in (dst </> "utils/ghc-pkg/ghc-pkg.cabal") common_substs
-  subst_in (dst </> "utils/iserv/iserv.cabal") common_substs
-  subst_in (dst </> "utils/runghc/runghc.cabal") common_substs
-
-  subst_in (dst </> "libraries/ghc-internal/ghc-internal.cabal") common_substs
-  subst_in (dst </> "libraries/ghc-experimental/ghc-experimental.cabal") common_substs
-  subst_in (dst </> "libraries/base/base.cabal") common_substs
-  subst_in (dst </> "libraries/rts/include/ghcversion.h") common_substs
-
-
 buildBootLibraries :: Cabal -> Ghc -> GhcPkg -> DeriveConstants -> GenApply -> GenPrimop -> GhcBuildOptions -> FilePath -> IO ()
 buildBootLibraries cabal ghc ghcpkg derive_constants genapply genprimop opts dst = do
   src <- makeAbsolute (dst </> "src")
