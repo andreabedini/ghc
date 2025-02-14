@@ -68,9 +68,6 @@ jobs:
           libraries/Cabal/dist-newstyle
           _build
 
-    - name: Build patched cabal
-      run: make cabal
-
     - # This runs autoconf also in the subdirectories
       run: autoreconf -v
 
