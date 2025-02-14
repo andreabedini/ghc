@@ -12,6 +12,12 @@ GHC = $(STAGE_DIR)/bin/ghc
 all: $(CABAL)
 	./Build.hs
 
+CONFIGURE_AC := $(shell git ls-files '**/configure.ac')
+CONFIGURE    := $(CONFIGURE_AC:%.ac=)
+
+$(CONFIGURE) : % : %.ac
+	autoreconf -i -Wall $(@D)
+
 $(CABAL0):
 	mkdir -p $(@D)
 	cabal install --project-dir libraries/Cabal --installdir $(abspath $(@D)) cabal-install:exe:cabal
@@ -24,7 +30,7 @@ STAGE$(STAGE)_TARGETS += $(addprefix $(STAGE_DIR)/bin/,$(STAGE$(STAGE)_EXES))
 .PHONY: stage$(STAGE)
 stage$(STAGE): $$(STAGE$(STAGE)_TARGETS)
 
-$$(STAGE$(STAGE)_TARGETS) &: $(CABAL0)
+$$(STAGE$(STAGE)_TARGETS) &: $(CABAL0) $(CONFIGURE)
 	$(CABAL0) $(CABAL_ARGS) install --project-file cabal.project.stage$(STAGE) --installdir $$(abspath $$(@D)) $(addprefix exe:,$(STAGE$(STAGE)_EXES))
 endef
 
