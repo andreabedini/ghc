@@ -173,6 +173,7 @@ buildGhcStage booting opts cabal ghc0 dst = do
         , "  " ++ src </> "libraries/ghci"
         , "  " ++ src </> "libraries/os-string/"
         , "  " ++ src </> "libraries/process/"
+        , "  " ++ src </> "libraries/rts-includes/"
         , "  " ++ src </> "libraries/semaphore-compat"
         , "  " ++ src </> "libraries/time"
         , "  " ++ src </> "libraries/unix/"
@@ -362,18 +363,12 @@ prepareGhcSources opts dst = do
   cp "./libraries"    dst
   cp "./compiler/*"   (dst </> "libraries/ghc/")
   cp "./rts"          (dst </> "libraries/")
+  cp "./rts-includes" (dst </> "libraries/")
   cp "./ghc"          (dst </> "ghc-bin")
   cp "./utils"        dst
 
   cp "./config.sub"   (dst </> "libraries/rts/")
   cp "./config.guess" (dst </> "libraries/rts/")
-
-  -- These needs to shared
-  cp "rts/include/rts/Bytecodes.h"            (dst </> "libraries/ghc/")
-  cp "rts/include/rts/storage/ClosureTypes.h" (dst </> "libraries/ghc/")
-  cp "rts/include/rts/storage/FunTypes.h"     (dst </> "libraries/ghc/")
-  cp "rts/include/stg/MachRegs.h"             (dst </> "libraries/ghc/")
-  cp "rts/include/stg/MachRegs/*.h"           (dst </> "libraries/ghc/MachRegs/")
 
   -- shared among ghc-internal rts and unlit
   cp "utils/fs/fs.h" (dst </> "libraries/ghc-internal/include")
@@ -438,6 +433,7 @@ buildBootLibraries cabal ghc ghcpkg derive_constants genapply genprimop opts dst
         , ""
         , "packages:"
         , "  " ++ src </> "libraries/rts"
+        , "  " ++ src </> "libraries/rts-includes"
         , ""
         , "benchmarks: False"
         , "tests: False"
