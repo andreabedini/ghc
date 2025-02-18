@@ -39,6 +39,7 @@ import Control.Monad
 
 import System.Directory
 import System.FilePath
+import GHC.Settings.Config (cProjectVersionInt, cProjectVersion, cProjectPatchLevel1, cProjectPatchLevel2)
 
 data CppOpts = CppOpts
   { sourceCodePreprocessor  :: !SourceCodePreprocessor
@@ -176,7 +177,11 @@ doCpp logger tmpfs dflags unit_env opts input_fn output_fn = do
     let asserts_def = [ "-D__GLASGOW_HASKELL_ASSERTS_IGNORED__" | gopt Opt_IgnoreAsserts dflags]
 
     -- Default CPP defines in Haskell source
-    hsSourceCppOpts <- getGhcVersionIncludeFlags dflags unit_env
+    -- hsSourceCppOpts <- getGhcVersionIncludeFlags dflags unit_env
+    ghc_version_include <-
+         do stub_filename <- newTempName logger tmpfs (tmpDir dflags) TFL_CurrentModule "h"
+            writeFile stub_filename ghc_version_stub
+            return [GHC.SysTools.FileOption "-include" stub_filename]
 
     -- MIN_VERSION macros
     let uids = explicitUnits unit_state
@@ -199,7 +204,7 @@ doCpp logger tmpfs dflags unit_env opts input_fn output_fn = do
 
     cpp_prog       (   map GHC.SysTools.Option verbFlags
                     ++ map GHC.SysTools.Option include_paths
-                    ++ map GHC.SysTools.Option hsSourceCppOpts
+                    ++ ghc_version_include
                     ++ map GHC.SysTools.Option target_defs
                     ++ map GHC.SysTools.Option backend_defs
                     ++ map GHC.SysTools.Option th_defs
@@ -229,6 +234,28 @@ doCpp logger tmpfs dflags unit_env opts input_fn output_fn = do
                        , GHC.SysTools.Option     "-o"
                        , GHC.SysTools.FileOption "" output_fn
                        ])
+
+-- ---------------------------------------------------------------------------
+-- ghcversion.h
+
+ghc_version_stub :: String
+ghc_version_stub =
+  concat
+  ["#define __GLASGOW_HASKELL__ ", show cProjectVersionInt, "\n"
+  ,"#define __GLASGOW_HASKELL_FULL_VERSION__ ", show cProjectVersion, "\n"
+  ,"\n"
+  ,"#define __GLASGOW_HASKELL_PATCHLEVEL1__", show cProjectPatchLevel1, "\n"
+  ,"#define __GLASGOW_HASKELL_PATCHLEVEL2__", show cProjectPatchLevel2, "\n"
+  ,"\n"
+  ,"#define MIN_VERSION_GLASGOW_HASKELL(ma,mi,pl1,pl2) (     \\\n"
+  ,"   ((ma)*100+(mi)) <  __GLASGOW_HASKELL__ ||             \\\n"
+  ,"   ((ma)*100+(mi)) == __GLASGOW_HASKELL__                \\\n"
+  ,"          && (pl1) <  __GLASGOW_HASKELL_PATCHLEVEL1__ || \\\n"
+  ,"   ((ma)*100+(mi)) == __GLASGOW_HASKELL__                \\\n"
+  ,"          && (pl1) == __GLASGOW_HASKELL_PATCHLEVEL1__    \\\n"
+  ,"          && (pl2) <= __GLASGOW_HASKELL_PATCHLEVEL2__ )\n"
+  ,"\n\n"
+  ]
 
 -- ---------------------------------------------------------------------------
 -- Macros (cribbed from Cabal)
