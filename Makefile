@@ -1,8 +1,7 @@
 export GHC0   ?= ghc-9.8.4
 export CABAL0 ?= _stage0/bin/cabal
 
-STAGE     = 1
-STAGE_DIR = _stage$(STAGE)
+STAGE_DIR = $(abspath _$(STAGE))
 
 CABAL_ARGS += --store-dir $(abspath $(STAGE_DIR)/store)
 CABAL_ARGS += --logs-dir $(abspath $(STAGE_DIR)/logs)
@@ -20,21 +19,22 @@ $(CONFIGURE) : % : %.ac
 
 $(CABAL0):
 	mkdir -p $(@D)
-	cabal install --project-dir libraries/Cabal --installdir $(abspath $(@D)) cabal-install:exe:cabal
+	cabal install --project-dir libraries/Cabal --installdir $(abspath $(@D)) --overwrite-policy=always cabal-install:exe:cabal
 
-STAGE1_EXES += ghc unlit
+PROJECT_FILE = cabal.project.$(STAGE)
 
 define STAGE_RULES
-STAGE$(STAGE)_TARGETS += $(addprefix $(STAGE_DIR)/bin/,$(STAGE$(STAGE)_EXES))
-
-.PHONY: stage$(STAGE)
-stage$(STAGE): $$(STAGE$(STAGE)_TARGETS)
-
-$$(STAGE$(STAGE)_TARGETS) &: $(CABAL0) $(CONFIGURE)
-	$(CABAL0) $(CABAL_ARGS) install --project-file cabal.project.stage$(STAGE) --installdir $$(abspath $$(@D)) $(addprefix exe:,$(STAGE$(STAGE)_EXES))
+$(let EXES,$(addprefix $(STAGE_DIR)/bin/,$($(STAGE)_TARGETS)),
+.PHONY: $(STAGE)
+$(STAGE)_EXES = $(EXES) 
+$(STAGE): $(EXES)
+$(EXES) &: $(CABAL0) $(PROJECT_FILE) $(CONFIGURE)
+	$(CABAL0) $(CABAL_ARGS) install --project-file $(PROJECT_FILE) --installdir $(STAGE_DIR)/bin --overwrite-policy=always $(addprefix exe:,$($(STAGE)_TARGETS))\
+)
 endef
 
-STAGE = 1
+STAGE = stage1
+stage1_TARGETS = ghc ghc-toolchain-bin
 $(eval $(STAGE_RULES))
 
 clean:
