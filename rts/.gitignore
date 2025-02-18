@@ -1,7 +1,8 @@
-include/ghcplatform.h
-include/ghcautoconf.h
-rts.buildinfo
-
 aclocal.m4
 autom4te.cache
 configure
+
+rts.buildinfo
+include/ghcautoconf.h
+include/ghcplatform.h
+include/ghcversion.h

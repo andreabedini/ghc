@@ -22,15 +22,37 @@ dnl     #define SIZEOF_CHAR 0
 dnl   recently.
 AC_PREREQ([2.69])
 
-AC_CONFIG_FILES([include/ghcplatform.h])
+dnl TODO De-duplicate with ../m4/bootstrapping_ghc_info_field.m4
+dnl Set the variable $1 to the value of the ghc --info field $2.
+AC_DEFUN([GHC_INFO_FIELD],[
+    AS_VAR_SET($1,`"$GHC" --info | "$GHC" -e 'getContents >>= foldMap putStrLn . lookup "$2" . read'`)
+    AC_SUBST($1)
+])
 
+AC_CONFIG_FILES([include/ghcplatform.h])
+AC_CONFIG_FILES([include/ghcversion.h])
 AC_CONFIG_HEADERS([include/ghcautoconf.h])
 
 AC_ARG_WITH([compiler],
-   [AS_HELP_STRING([--with-compier],
-                   [give the path to a particular compiler (ignored)])],
+   [AS_HELP_STRING([--with-compier=PATH],
+                   [Use a particular compiler available at PATH [default=ghc]])],
    [],
-   [])
+   [with_compiler=ghc]
+)
+AC_PATH_PROG([GHC],$with_compiler)
+
+dnl NOTE: This is relative to what is being used to compile the rts,
+dnl even if this is a new rts to be included in a new compiler version.
+dnl tl;dr: this is going to be wrong in stage1 but will be correct in stage2.
+GHC_INFO_FIELD([ProjectVersion], [Project version])
+GHC_INFO_FIELD([ProjectVersionInt], [Project Version Int])
+GHC_INFO_FIELD([ProjectPatchLevel1], [Project Patch Level1])
+GHC_INFO_FIELD([ProjectPatchLevel2], [Project Patch Level2])
+
+# AC_DEFINE_UNQUOTED([ProjectVersion],["$ProjectVersion"])
+# AC_DEFINE_UNQUOTED([ProjectVersionInt],["$ProjectVersionInt"])
+# AC_DEFINE_UNQUOTED([ProjectPatchLevel1],["$ProjectVersionPatchLevel1"])
+# AC_DEFINE_UNQUOTED([ProjectPatchLevel2],["$ProjectVersionPatchLevel2"])
 
 AC_ARG_ENABLE(asserts-all-ways,
 [AS_HELP_STRING([--enable-asserts-all-ways],

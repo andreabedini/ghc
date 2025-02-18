@@ -339,10 +339,28 @@ library
     exposed: True
     exposed-modules:
 
+    include-dirs:
+      .
+      include
+
+    autogen-includes:
+      ghcautoconf.h
+      ghcplatform.h
+      ghcversion.h
+
+    install-includes:
+      ghcautoconf.h
+      ghcconfig.h
+      ghcplatform.h
+      ghcversion.h
+
+      HsFFI.h
+      Rts.h
+      RtsAPI.h
+      Stg.h
+      DerivedConstants.h
+
     if arch(javascript)
-
-      include-dirs: include
-
       js-sources:
         js/config.js
         js/structs.js
@@ -372,11 +390,10 @@ library
         js/globals.js
         js/time.js
 
-      install-includes: HsFFI.h MachDeps.h Rts.h RtsAPI.h Stg.h
-                        ghcautoconf.h ghcconfig.h ghcplatform.h ghcversion.h
-                        DerivedConstants.h
-                        stg/MachRegsForHost.h
-                        stg/Types.h
+      install-includes:
+        MachDeps.h
+        stg/MachRegsForHost.h
+        stg/Types.h
 
     else
       -- If we are using an in-tree libffi then we must declare it as a bundled
@@ -487,80 +504,76 @@ library
       if !flag(smp)
          cpp-options: -DNOSMP
 
-      autogen-includes:
-        include/ghcautoconf.h
-        include/ghcplatform.h
-
-      include-dirs: include
-      -- TODO: move internal headers into include/private?
-      include-dirs: .
+      -- TODO: Check this?
       includes: Rts.h
-      install-includes: Cmm.h HsFFI.h MachDeps.h Jumps.h Rts.h RtsAPI.h RtsSymbols.h Stg.h
-                        ghcautoconf.h ghcconfig.h ghcplatform.h ghcversion.h
-                        -- ^ from include
-                        DerivedConstants.h
-                        rts/EventLogConstants.h
-                        rts/EventTypes.h
-                        -- ^ generated
-                        rts/ghc_ffi.h
-                        rts/Adjustor.h
-                        rts/ExecPage.h
-                        rts/BlockSignals.h
-                        rts/Config.h
-                        rts/Constants.h
-                        rts/EventLogFormat.h
-                        rts/EventLogWriter.h
-                        rts/FileLock.h
-                        rts/Flags.h
-                        rts/ForeignExports.h
-                        rts/GetTime.h
-                        rts/Globals.h
-                        rts/Hpc.h
-                        rts/IOInterface.h
-                        rts/Libdw.h
-                        rts/LibdwPool.h
-                        rts/Linker.h
-                        rts/Main.h
-                        rts/Messages.h
-                        rts/NonMoving.h
-                        rts/OSThreads.h
-                        rts/Parallel.h
-                        rts/PrimFloat.h
-                        rts/Profiling.h
-                        rts/IPE.h
-                        rts/PosixSource.h
-                        rts/Signals.h
-                        rts/SpinLock.h
-                        rts/StableName.h
-                        rts/StablePtr.h
-                        rts/StaticPtrTable.h
-                        rts/TTY.h
-                        rts/Threads.h
-                        rts/Ticky.h
-                        rts/Time.h
-                        rts/Timer.h
-                        rts/TSANUtils.h
-                        rts/Types.h
-                        rts/Utils.h
-                        rts/prof/CCS.h
-                        rts/prof/Heap.h
-                        rts/prof/LDV.h
-                        rts/storage/Block.h
-                        rts/storage/ClosureMacros.h
-                        rts/storage/Closures.h
-                        rts/storage/Heap.h
-                        rts/storage/HeapAlloc.h
-                        rts/storage/GC.h
-                        rts/storage/InfoTables.h
-                        rts/storage/MBlock.h
-                        rts/storage/TSO.h
-                        stg/DLL.h
-                        stg/MiscClosures.h
-                        stg/Prim.h
-                        stg/Regs.h
-                        stg/SMP.h
-                        stg/Ticky.h
-                        stg/Types.h
+      install-includes:
+        Cmm.h
+        MachDeps.h
+        Jumps.h
+        RtsSymbols.h
+        -- ^ from include
+        rts/EventLogConstants.h
+        rts/EventTypes.h
+        -- ^ generated
+        rts/ghc_ffi.h
+        rts/Adjustor.h
+        rts/ExecPage.h
+        rts/BlockSignals.h
+        rts/Config.h
+        rts/Constants.h
+        rts/EventLogFormat.h
+        rts/EventLogWriter.h
+        rts/FileLock.h
+        rts/Flags.h
+        rts/ForeignExports.h
+        rts/GetTime.h
+        rts/Globals.h
+        rts/Hpc.h
+        rts/IOInterface.h
+        rts/Libdw.h
+        rts/LibdwPool.h
+        rts/Linker.h
+        rts/Main.h
+        rts/Messages.h
+        rts/NonMoving.h
+        rts/OSThreads.h
+        rts/Parallel.h
+        rts/PrimFloat.h
+        rts/Profiling.h
+        rts/IPE.h
+        rts/PosixSource.h
+        rts/Signals.h
+        rts/SpinLock.h
+        rts/StableName.h
+        rts/StablePtr.h
+        rts/StaticPtrTable.h
+        rts/TTY.h
+        rts/Threads.h
+        rts/Ticky.h
+        rts/Time.h
+        rts/Timer.h
+        rts/TSANUtils.h
+        rts/Types.h
+        rts/Utils.h
+        rts/prof/CCS.h
+        rts/prof/Heap.h
+        rts/prof/LDV.h
+        rts/storage/Block.h
+        rts/storage/ClosureMacros.h
+        rts/storage/Closures.h
+        rts/storage/Heap.h
+        rts/storage/HeapAlloc.h
+        rts/storage/GC.h
+        rts/storage/InfoTables.h
+        rts/storage/MBlock.h
+        rts/storage/TSO.h
+        stg/DLL.h
+        stg/MiscClosures.h
+        stg/Prim.h
+        stg/Regs.h
+        stg/SMP.h
+        stg/Ticky.h
+        stg/Types.h
 
       if os(osx)
         ld-options: "-Wl,-search_paths_first"
