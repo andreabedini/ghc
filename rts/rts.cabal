@@ -15,9 +15,8 @@ extra-source-files:
     configure
     config.guess
     config.sub
-    ghcplatform.h.top.in
-    ghcplatform.h.bottom
-    ghcautoconf.h.autoconf.in
+    include/ghcplatform.h.in
+    include/ghcversion.h.in
     configure.ac
     external-symbols.list.in
     rts.buildinfo.in
@@ -488,11 +487,14 @@ library
       if !flag(smp)
          cpp-options: -DNOSMP
 
+      autogen-includes:
+        include/ghcautoconf.h
+        include/ghcplatform.h
+
       include-dirs: include
       -- TODO: move internal headers into include/private?
       include-dirs: .
       includes: Rts.h
-      autogen-includes: ghcautoconf.h ghcplatform.h
       install-includes: Cmm.h HsFFI.h MachDeps.h Jumps.h Rts.h RtsAPI.h RtsSymbols.h Stg.h
                         ghcautoconf.h ghcconfig.h ghcplatform.h ghcversion.h
                         -- ^ from include
