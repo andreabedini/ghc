@@ -356,7 +356,8 @@ $(BUILD_DIR)/booted: $(CONFIGURED_FILES)
 #
 
 # Target for creating the final binary distribution directory
-$(BUILD_DIR)/bindist: stage2 driver/ghc-usage.txt driver/ghci-usage.txt
+.PHONY: bindist
+bindist: stage2 driver/ghc-usage.txt driver/ghci-usage.txt
 	$(call GROUP,Creating binary distribution in $(BUILD_DIR)/bindist)
 	@mkdir -p $(BUILD_DIR)/bindist/bin
 	@mkdir -p $(BUILD_DIR)/bindist/lib
