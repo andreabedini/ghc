@@ -962,9 +962,14 @@ _build/bindist/tests.tar.gz:
 
 $(GHC1) $(GHC2): | hackage
 hackage: _build/packages/hackage.haskell.org/01-index.tar.gz
+
+# Always run cabal update. This makes sure that the index file won't go stale,
+# whatever index-state we set in the project file. Reproducibility is left to
+# index-state.
+.PHONY: _build/packages/hackage.haskell.org/01-index.tar.gz
 _build/packages/hackage.haskell.org/01-index.tar.gz: | $(CABAL)
 	@mkdir -p $(@D)
-	$(CABAL) $(CABAL_ARGS) update --index-state @1745256340
+	$(CABAL) $(CABAL_ARGS) update
 
 # booted depends on successful source preparation
 configure rts/configure libraries/ghc-internal/configure driver/ghci/ghci-wrapper.cabal libraries/base/base.cabal libraries/ghc-experimental/ghc-experimental.cabal libraries/ghc-boot-th-next/ghc-boot-th-next.cabal libraries/ghci/ghci.cabal libraries/ghc-boot-th/ghc-boot-th.cabal libraries/ghc-boot/ghc-boot.cabal libraries/template-haskell/template-haskell.cabal libraries/ghc-heap/ghc-heap.cabal libraries/ghc-internal/ghc-internal.cabal compiler/ghc.cabal utils/ghc-pkg/ghc-pkg.cabal utils/runghc/runghc.cabal utils/ghc-iserv/ghc-iserv.cabal utils/remote-iserv/remote-iserv.cabal ghc/ghc-bin.cabal: configure.ac rts/configure.ac libraries/ghc-internal/configure.ac libraries/ghc-boot-th-next/.synth-stamp driver/ghci/ghci-wrapper.cabal.in libraries/base/base.cabal.in libraries/ghc-experimental/ghc-experimental.cabal.in libraries/ghc-boot-th-next/ghc-boot-th-next.cabal.in libraries/ghci/ghci.cabal.in libraries/ghc-boot-th/ghc-boot-th.cabal.in libraries/ghc-boot/ghc-boot.cabal.in libraries/template-haskell/template-haskell.cabal.in libraries/ghc-heap/ghc-heap.cabal.in libraries/ghc-internal/ghc-internal.cabal.in compiler/ghc.cabal.in utils/ghc-pkg/ghc-pkg.cabal.in utils/runghc/runghc.cabal.in utils/ghc-iserv/ghc-iserv.cabal.in utils/remote-iserv/remote-iserv.cabal.in ghc/ghc-bin.cabal.in
