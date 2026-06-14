@@ -47,13 +47,11 @@ ALLOWLIST = {
     'compiler/GHC/Llvm/Types.hs',
     'compiler/GHC/Runtime/Interpreter/Wasm.hs',
     'compiler/GHC/Runtime/Utils.hs',
-    'compiler/GHC/SysTools/Ar.hs',
     'compiler/GHC/SysTools/BaseDir.hs',
     'compiler/GHC/SysTools/Process.hs',
     'compiler/GHC/SysTools/Terminal.hs',
     'compiler/GHC/Utils/Constants.hs',
     'compiler/GHC/Utils/Panic.hs',
-    'compiler/GHC/Utils/TmpFs.hs',
     'compiler/GHC/Utils/Touch.hs',
 }
 

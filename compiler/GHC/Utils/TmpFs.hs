@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP #-}
-
 -- | Temporary file-system management
 module GHC.Utils.TmpFs
     ( TmpFs
@@ -32,6 +30,7 @@ import GHC.Utils.Logger
 import GHC.Utils.Misc
 import GHC.Utils.Exception as Exception
 import GHC.Driver.Phases
+import GHC.Platform.Host.Ops (theHostOps, hostGetProcessID)
 
 import Data.List (partition)
 import qualified Data.Set as Set
@@ -42,10 +41,6 @@ import Data.IORef
 import System.Directory
 import System.FilePath
 import System.IO.Error
-
-#if !defined(mingw32_HOST_OS)
-import qualified System.Posix.Internals
-#endif
 
 -- | Temporary file-system
 data TmpFs = TmpFs
@@ -341,7 +336,7 @@ getTempDir logger tmpfs (TempDir tmp_dir) = do
     mapping <- readIORef dir_ref
     case Map.lookup tmp_dir mapping of
         Nothing -> do
-            pid <- getProcessID
+            pid <- hostGetProcessID theHostOps
             let prefix = tmp_dir </> "ghc" ++ show pid ++ "_"
             mask_ $ mkTempDir prefix
         Just dir -> return dir
@@ -440,14 +435,6 @@ removeWith logger remover f = remover f `Exception.catchIO`
    in debugTraceMsg logger 2 msg
   )
 
-#if defined(mingw32_HOST_OS)
--- relies on Int == Int32 on Windows
-foreign import ccall unsafe "_getpid" getProcessID :: IO Int
-#else
-getProcessID :: IO Int
-getProcessID = System.Posix.Internals.c_getpid >>= return . fromIntegral
-#endif
-
 -- The following three functions are from the `temporary` package.
 
 -- | Create and use a temporary directory in the system standard temporary
@@ -486,7 +473,7 @@ ignoringIOErrors ioe = ioe `Exception.catchIO` const (return ())
 
 createTempDirectory :: FilePath -> String -> IO FilePath
 createTempDirectory dir template = do
-  pid <- getProcessID
+  pid <- hostGetProcessID theHostOps
   findTempName pid
   where findTempName x = do
             let path = dir </> template ++ show x

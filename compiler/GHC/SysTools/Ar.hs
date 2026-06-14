@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
 {- Note [The need for Ar.hs]
    ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,6 +34,7 @@ module GHC.SysTools.Ar
    where
 
 import GHC.Prelude
+import GHC.Platform.Host.Ops (theHostOps, hostArchiveFileInfo)
 
 import Data.List (mapAccumL, isPrefixOf)
 import Data.Monoid ((<>))
@@ -45,9 +45,6 @@ import Control.Applicative
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString.Lazy as L
-#if !defined(mingw32_HOST_OS)
-import qualified System.Posix.Files as POSIX
-#endif
 import System.FilePath (takeFileName)
 
 data ArchiveEntry = ArchiveEntry
@@ -243,28 +240,9 @@ loadAr fp = parseAr <$> B.readFile fp
 loadObj :: FilePath -> IO ArchiveEntry
 loadObj fp = do
   payload <- B.readFile fp
-  (modt, own, grp, mode) <- fileInfo fp
+  -- (mod time, own, grp, mode in decimal); delegated to the host platform
+  -- (zeros on Windows, @stat@ on POSIX). See "GHC.Platform.Host.Ops".
+  (modt, own, grp, mode) <- hostArchiveFileInfo theHostOps fp
   return $ ArchiveEntry
     (takeFileName fp) modt own grp mode
     (B.length payload) payload
-
--- | Take a filePath and return (mod time, own, grp, mode in decimal)
-fileInfo :: FilePath -> IO ( Int, Int, Int, Int) -- ^ mod time, own, grp, mode (in decimal)
-#if defined(mingw32_HOST_OS)
--- on windows mod time, owner group and mode are zero.
-fileInfo _ = pure (0,0,0,0)
-#else
-fileInfo fp = go <$> POSIX.getFileStatus fp
-  where go status = ( fromEnum $ POSIX.modificationTime status
-                    , fromIntegral $ POSIX.fileOwner status
-                    , fromIntegral $ POSIX.fileGroup status
-                    , oct2dec . fromIntegral $ POSIX.fileMode status
-                    )
-
-oct2dec :: Int -> Int
-oct2dec = foldl' (\a b -> a * 10 + b) 0 . reverse . dec 8
-  where dec _ 0 = []
-        dec b i = let (rest, last) = i `quotRem` b
-                  in last:dec b rest
-
-#endif

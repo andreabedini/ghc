@@ -42,6 +42,10 @@ data HostOps = HostOps
   { hostGetProcessID :: IO Int
       -- ^ The id of the current (compiler) process. Was: a @_getpid@ vs
       --   @c_getpid@ split in "GHC.Utils.TmpFs".
+  , hostArchiveFileInfo :: FilePath -> IO (Int, Int, Int, Int)
+      -- ^ @(modification time, owner, group, mode in decimal)@ for an archive
+      --   member; all zero on Windows. Was: a @stat@ vs zeros split in
+      --   "GHC.SysTools.Ar".
   }
 
 -- | The 'HostOps' for the platform this @ghc@ was built to run on.
@@ -50,5 +54,6 @@ data HostOps = HostOps
 -- a follow-up.
 theHostOps :: HostOps
 theHostOps = HostOps
-  { hostGetProcessID = Impl.getProcessID
+  { hostGetProcessID    = Impl.getProcessID
+  , hostArchiveFileInfo = Impl.archiveFileInfo
   }
