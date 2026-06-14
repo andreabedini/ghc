@@ -23,6 +23,9 @@ cpp:
 rts-includes:
 	(cd $(TOP)/.. && python3 testsuite/tests/linters/regex-linters/check-rts-includes.py tracked)
 
+host-cpp:
+	(cd $(TOP)/.. && python3 testsuite/tests/linters/regex-linters/check-host-cpp.py tracked)
+
 changelogs:
 	regex-linters/check-changelogs.sh $(TOP)/..
 

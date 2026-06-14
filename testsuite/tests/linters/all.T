@@ -21,6 +21,10 @@ test('rts-includes', [ req_ls_files
                      , extra_files(["regex-linters"]) ]
                    , makefile_test, ['rts-includes'])
 
+test('host-cpp', [ req_ls_files
+                 , extra_files(["regex-linters"]) ]
+               , makefile_test, ['host-cpp'])
+
 test('version-number', [ req_ls_files
                        , extra_files(["regex-linters"]) ]
                      , makefile_test, ['version-number'])
