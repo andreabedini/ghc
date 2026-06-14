@@ -61,7 +61,7 @@ disposition. As each file is converted it is removed from the linter allowlist
 (`testsuite/tests/linters/regex-linters/check-host-cpp.py`).
 
 Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = converted
-(removed from the allowlist). As of the latest Phase 2 commit, 13 of 15 remain.
+(removed from the allowlist). As of the latest Phase 2 commit, 11 of 15 remain.
 
 | File | Branches on | What it decides | Disposition |
 |---|---|---|---|
@@ -69,7 +69,7 @@ Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = convert
 | ✅ `GHC/SysTools/Ar.hs` | `mingw32` | file mtime/owner/mode: zeros vs `stat` | `hostArchiveFileInfo` (done) |
 | `GHC/Utils/Panic.hs` | `mingw32` | SIGINT/SIGTERM vs console-ctrl handler | `hostWithSignals` |
 | `GHC/SysTools/Terminal.hs` | `mingw32` | ANSI vs Win32 console colour | `hostStderrSupportsColor` |
-| `GHC/SysTools/Process.hs` | `mingw32` | `PATH` mangling for child env | `hostMangleProcessEnv` (or host op on path sep) |
+| ✅ `GHC/SysTools/Process.hs` | `mingw32` | `PATH` mangling for child env | `hostMangleGccPathEnv` (done) |
 | `GHC/SysTools/BaseDir.hs` | `mingw32` | tooldir expansion / exe-relative libdir | host op for exe path + path quirks |
 | `GHC/Runtime/Utils.hs` | `mingw32` | `_close` import + pipe/handle handling | host op or move to impl module |
 | `GHC/Runtime/Interpreter/Wasm.hs` | `mingw32` | POSIX-only wasm interpreter pieces | host op / impl module (wasi has none) |
@@ -77,7 +77,7 @@ Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = convert
 | `GHC/Driver/Session.hs` | `linux`,`mingw32` | `-rdynamic`/`--export-all-symbols`; path split marker | target query on `Platform` + host path-sep op |
 | `GHC/Driver/MakeAction.hs` | `wasm32` | wasm-specific make behaviour | host op / impl module |
 | `GHC.hs` | `wasm32`, `mingw32` | wasm guard; `.\` path prefix check | host op for path quirks |
-| `GHC/Utils/Touch.hs` | `mingw32` | touch implementation | `hostTouch` / impl module |
+| ✅ `GHC/Utils/Touch.hs` | `mingw32` | touch implementation | `hostTouch` (done) |
 | `GHC/Utils/Constants.hs` | `mingw32`, `darwin` | `isWindowsHost`/`isDarwinHost` constants | **already a host abstraction** — fold into `Host` identity |
 | `GHC/Llvm/Types.hs` | `darwin` | `-fno-asm-shortcutting` OPTIONS pragma | special: file-level pragma; allowlist permanently or handle via build flag |
 

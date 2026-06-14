@@ -46,6 +46,14 @@ data HostOps = HostOps
       -- ^ @(modification time, owner, group, mode in decimal)@ for an archive
       --   member; all zero on Windows. Was: a @stat@ vs zeros split in
       --   "GHC.SysTools.Ar".
+  , hostTouch :: FilePath -> IO ()
+      -- ^ Set the mtime of a file to now. Was: a Win32 vs POSIX split in
+      --   "GHC.Utils.Touch".
+  , hostMangleGccPathEnv :: [FilePath] -> [(String, String)] -> [(String, String)]
+      -- ^ Given the @-B@ directories, adjust a process environment so the C
+      --   compiler can find its auxiliary binaries (prepends to @PATH@ on
+      --   Windows, identity elsewhere; #1110). Was: an inline split in
+      --   "GHC.SysTools.Process".
   }
 
 -- | The 'HostOps' for the platform this @ghc@ was built to run on.
@@ -54,6 +62,8 @@ data HostOps = HostOps
 -- a follow-up.
 theHostOps :: HostOps
 theHostOps = HostOps
-  { hostGetProcessID    = Impl.getProcessID
-  , hostArchiveFileInfo = Impl.archiveFileInfo
+  { hostGetProcessID     = Impl.getProcessID
+  , hostArchiveFileInfo  = Impl.archiveFileInfo
+  , hostTouch            = Impl.touch
+  , hostMangleGccPathEnv = Impl.mangleGccPathEnv
   }

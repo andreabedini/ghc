@@ -4,12 +4,15 @@
 module GHC.Platform.Host.Posix
   ( getProcessID
   , archiveFileInfo
+  , touch
+  , mangleGccPathEnv
   ) where
 
 import GHC.Prelude
 
 import qualified System.Posix.Internals
 import qualified System.Posix.Files as POSIX
+import System.Posix.IO
 
 -- | (POSIX branch moved verbatim from "GHC.Utils.TmpFs".)
 getProcessID :: IO Int
@@ -29,3 +32,16 @@ oct2dec = foldl' (\a b -> a * 10 + b) 0 . reverse . dec 8
   where dec _ 0 = []
         dec b i = let (rest, last) = i `quotRem` b
                   in last:dec b rest
+
+-- | (POSIX branch moved verbatim from "GHC.Utils.Touch".)
+touch :: FilePath -> IO ()
+touch file = do
+  let oflags = defaultFileFlags { noctty = True, creat = Just 0o666 }
+  fd <- openFd file WriteOnly oflags
+  POSIX.touchFd fd
+  closeFd fd
+
+-- | (POSIX branch moved verbatim from "GHC.SysTools.Process": no mangling
+-- needed off Windows.)
+mangleGccPathEnv :: [FilePath] -> [(String, String)] -> [(String, String)]
+mangleGccPathEnv _ = id

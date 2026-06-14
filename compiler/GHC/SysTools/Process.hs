@@ -25,6 +25,7 @@ import GHC.Utils.Misc
 import GHC.Utils.Logger
 import GHC.Utils.TmpFs
 import GHC.Utils.CliOption
+import GHC.Platform.Host.Ops (theHostOps, hostMangleGccPathEnv)
 
 import GHC.Types.SrcLoc ( SrcLoc, mkSrcLoc, mkSrcSpan )
 import GHC.Data.FastString
@@ -91,23 +92,15 @@ getGccEnv opts =
   if null b_dirs
      then return Nothing
      else do env <- getEnvironment
-             return (Just (mangle_paths env))
+             -- Work around #1110 on Windows only (lest we stumble into
+             -- #17266); the host-specific mangling lives in
+             -- "GHC.Platform.Host.Ops".
+             return (Just (hostMangleGccPathEnv theHostOps b_dirs env))
  where
   (b_dirs, _) = partitionWith get_b_opt opts
 
   get_b_opt (Option ('-':'B':dir)) = Left dir
   get_b_opt other = Right other
-
-  -- Work around #1110 on Windows only (lest we stumble into #17266).
-#if defined(mingw32_HOST_OS)
-  mangle_paths = map mangle_path
-  mangle_path (path,paths) | map toUpper path == "PATH"
-        = (path, '\"' : head b_dirs ++ "\";" ++ paths)
-  mangle_path other = other
-#else
-  mangle_paths = id
-#endif
-
 
 -----------------------------------------------------------------------------
 -- Running an external program
