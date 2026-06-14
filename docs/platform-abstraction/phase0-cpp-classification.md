@@ -70,7 +70,7 @@ disposition. As each file is converted it is removed from the linter allowlist
 (`testsuite/tests/linters/regex-linters/check-host-cpp.py`).
 
 Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = converted
-(removed from the allowlist). As of the latest Phase 2 commit, 12 of 16 remain
+(removed from the allowlist). As of the latest Phase 2 commit, 11 of 16 remain
 (the 16th, `Runtime/Interpreter/Init.hs`, arrived via a master rebase).
 
 | File | Branches on | What it decides | Disposition |
@@ -78,7 +78,7 @@ Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = convert
 | ✅ `GHC/Utils/TmpFs.hs` | `mingw32` | `_getpid` vs POSIX `c_getpid` | `hostGetProcessID` (done) |
 | ✅ `GHC/SysTools/Ar.hs` | `mingw32` | file mtime/owner/mode: zeros vs `stat` | `hostArchiveFileInfo` (done) |
 | `GHC/Utils/Panic.hs` | `mingw32` | SIGINT/SIGTERM vs console-ctrl handler | `hostWithSignals` |
-| `GHC/SysTools/Terminal.hs` | `mingw32` | ANSI vs Win32 console colour | `hostStderrSupportsColor` |
+| ✅ `GHC/SysTools/Terminal.hs` | `mingw32` | ANSI vs Win32 console colour | `hostStderrSupportsColor` (done) |
 | ✅ `GHC/SysTools/Process.hs` | `mingw32` | `PATH` mangling for child env | `hostMangleGccPathEnv` (done) |
 | `GHC/SysTools/BaseDir.hs` | `mingw32` | tooldir expansion / exe-relative libdir | host op for exe path + path quirks |
 | `GHC/Runtime/Utils.hs` | `mingw32` | `_close` import + pipe/handle handling | host op or move to impl module |

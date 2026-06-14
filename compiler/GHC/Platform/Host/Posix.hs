@@ -6,6 +6,7 @@ module GHC.Platform.Host.Posix
   , archiveFileInfo
   , touch
   , mangleGccPathEnv
+  , stderrSupportsAnsiColors
   ) where
 
 import GHC.Prelude
@@ -13,6 +14,8 @@ import GHC.Prelude
 import qualified System.Posix.Internals
 import qualified System.Posix.Files as POSIX
 import System.Posix.IO
+import System.Environment (lookupEnv)
+import System.IO (hIsTerminalDevice, stderr)
 
 -- | (POSIX branch moved verbatim from "GHC.Utils.TmpFs".)
 getProcessID :: IO Int
@@ -45,3 +48,11 @@ touch file = do
 -- needed off Windows.)
 mangleGccPathEnv :: [FilePath] -> [(String, String)] -> [(String, String)]
 mangleGccPathEnv _ = id
+
+-- | (POSIX branch moved verbatim from "GHC.SysTools.Terminal".)
+-- Equivalent of https://hackage.haskell.org/package/ansi-terminal/docs/System-Console-ANSI.html#v:hSupportsANSI
+stderrSupportsAnsiColors :: IO Bool
+stderrSupportsAnsiColors = do
+  isTerminal <- hIsTerminalDevice stderr
+  term <- lookupEnv "TERM"
+  pure $ isTerminal && term /= Just "dumb"

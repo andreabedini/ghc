@@ -54,6 +54,10 @@ data HostOps = HostOps
       --   compiler can find its auxiliary binaries (prepends to @PATH@ on
       --   Windows, identity elsewhere; #1110). Was: an inline split in
       --   "GHC.SysTools.Process".
+  , hostStderrSupportsColor :: IO Bool
+      -- ^ Whether ANSI colour escape sequences can be used on @stderr@
+      --   (terminal probe on POSIX, console-mode/VTP handling on Windows). Was:
+      --   a @mingw32@ split in "GHC.SysTools.Terminal".
   }
 
 -- | The 'HostOps' for the platform this @ghc@ was built to run on.
@@ -66,4 +70,5 @@ theHostOps = HostOps
   , hostArchiveFileInfo  = Impl.archiveFileInfo
   , hostTouch            = Impl.touch
   , hostMangleGccPathEnv = Impl.mangleGccPathEnv
+  , hostStderrSupportsColor = Impl.stderrSupportsAnsiColors
   }
