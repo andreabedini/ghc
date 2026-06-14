@@ -130,6 +130,14 @@ Library
     else
         Build-Depends: unix   >= 2.7 && < 2.9
 
+    -- Host-platform operations (see docs/platform-abstraction/plan.md). The
+    -- per-OS implementation is selected here so it is the only module compiled;
+    -- GHC.Platform.Host.Ops imports the matching one.
+    if os(windows)
+        other-modules: GHC.Platform.Host.Windows
+    else
+        other-modules: GHC.Platform.Host.Posix
+
     GHC-Options: -Wall
                  -Wno-name-shadowing
                  -Wnoncanonical-monad-instances
@@ -665,6 +673,7 @@ Library
         GHC.Platform.ARM
         GHC.Platform.AArch64
         GHC.Platform.Constants
+        GHC.Platform.Host.Ops
         GHC.Platform.LA64
         GHC.Platform.NoRegs
         GHC.Platform.PPC
