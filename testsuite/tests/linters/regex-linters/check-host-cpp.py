@@ -45,6 +45,7 @@ ALLOWLIST = {
     'compiler/GHC/Driver/Session.hs',
     'compiler/GHC/Linker/Loader.hs',
     'compiler/GHC/Llvm/Types.hs',
+    'compiler/GHC/Runtime/Interpreter/Init.hs',
     'compiler/GHC/Runtime/Interpreter/Wasm.hs',
     'compiler/GHC/Runtime/Utils.hs',
     'compiler/GHC/SysTools/BaseDir.hs',

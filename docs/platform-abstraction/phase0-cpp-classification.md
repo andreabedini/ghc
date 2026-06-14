@@ -16,20 +16,22 @@ supersedes the rough estimates in `plan.md §1`.
 
 | Category | Occurrences | Files | Disposition |
 |---|---:|---:|---|
-| host/target **OS** (`*_HOST_OS`) | 170 | 46 | split: compiler = host (abstract); libs = target (module split) |
-| host/target **ARCH** (`*_HOST_ARCH`) | 69 | 31 | same split as OS |
+| host/target **OS** (`*_HOST_OS`) | 162 | 43 | split: compiler = host (abstract); libs = target (module split) |
+| host/target **ARCH** (`*_HOST_ARCH`) | 70 | 31 | same split as OS |
 | **machine-model** (`WORD_SIZE_IN_BITS`, `WORDS_BIGENDIAN`, `TABLES_NEXT_TO_CODE`, …) | 57 | 22 | compiler host bits → `Host`; libs/target → `Platform` |
-| **capability** (`HAVE_*`: eventfd, epoll, kqueue, signal.h, …) | 57 | 19 | host op (compiler) or feature config / target capability (libs) |
-| **build-feature** (`HAVE_INTERNAL_INTERPRETER`, `CAN_LOAD_DLL`, `HAVE_LIBZSTD`) | 43 | 11 | **not platform** → runtime `Settings`/`Interp` (plan §4.3) |
+| **capability** (`HAVE_*`: eventfd, epoll, kqueue, signal.h, …) | 58 | 19 | host op (compiler) or feature config / target capability (libs) |
+| **build-feature** (`HAVE_INTERNAL_INTERPRETER`, `CAN_LOAD_DLL`, `HAVE_LIBZSTD`) | 37 | 10 | **not platform** → runtime `Settings`/`Interp` (plan §4.3) |
 | **debug** (`DEBUG`) | 28 | 12 | **leave** — funnel through `debugIsOn`/`assert` |
-| **bootstrap-version** (`MIN_VERSION_*`, `__GLASGOW_HASKELL__`) | 17 | 9 | **leave** — genuine bootstrap-range variability |
-| other | 124 | 34 | reclassify case-by-case (mostly capability/build flags) |
+| **bootstrap-version** (`MIN_VERSION_*`, `__GLASGOW_HASKELL__`) | 20 | 9 | **leave** — genuine bootstrap-range variability |
+| other | 130 | 36 | reclassify case-by-case (mostly capability/build flags) |
 
-Top individual tokens: `mingw32_HOST_OS` (144), `javascript_HOST_ARCH` (58),
-`WORD_SIZE_IN_BITS` (36), `HAVE_INTERNAL_INTERPRETER` (28), `DEBUG` (25),
+Top individual tokens: `mingw32_HOST_OS` (136), `javascript_HOST_ARCH` (60),
+`WORD_SIZE_IN_BITS` (36), `DEBUG` (25), `HAVE_INTERNAL_INTERPRETER` (22),
 `CAN_LOAD_DLL` (13), `WORDS_BIGENDIAN` (11), `CHARBUF_UTF16` (11).
 
-The `mingw32_HOST_OS` (144) count matches `plan.md §1` exactly.
+The numbers above are regenerated from `census.py` against the current tree;
+the broad shape (and the classification) still matches `plan.md §1`'s rough
+estimates.
 
 ---
 
@@ -48,8 +50,15 @@ appear, and that determines the abstraction:
 
 | | host-OS/arch CPP files | occurrences |
 |---|---:|---:|
-| `compiler/` (host — abstract) | **15** | 34 |
+| `compiler/` (host — abstract) | **16** | 36 |
 | `base` + `ghc-internal` (target — module split) | 53 | 205 |
+
+The compiler inventory was **15** files at Phase 0; a later master rebase added
+`GHC/Runtime/Interpreter/Init.hs` (a `wasm32_HOST_ARCH` guard introduced when the
+interpreter init code was split out), bringing it to **16**. After the Phase 2
+conversions so far, only **13** files still contain host CPP in the current tree
+(of which `GHC/Platform/Host/Ops.hs` is the abstraction-layer seam itself); see
+§3 for the live status. Run `census.py` to regenerate these figures.
 
 ---
 
@@ -61,7 +70,8 @@ disposition. As each file is converted it is removed from the linter allowlist
 (`testsuite/tests/linters/regex-linters/check-host-cpp.py`).
 
 Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = converted
-(removed from the allowlist). As of the latest Phase 2 commit, 11 of 15 remain.
+(removed from the allowlist). As of the latest Phase 2 commit, 12 of 16 remain
+(the 16th, `Runtime/Interpreter/Init.hs`, arrived via a master rebase).
 
 | File | Branches on | What it decides | Disposition |
 |---|---|---|---|
@@ -72,6 +82,7 @@ Conversion status is tracked by the `check-host-cpp.py` allowlist; ✅ = convert
 | ✅ `GHC/SysTools/Process.hs` | `mingw32` | `PATH` mangling for child env | `hostMangleGccPathEnv` (done) |
 | `GHC/SysTools/BaseDir.hs` | `mingw32` | tooldir expansion / exe-relative libdir | host op for exe path + path quirks |
 | `GHC/Runtime/Utils.hs` | `mingw32` | `_close` import + pipe/handle handling | host op or move to impl module |
+| `GHC/Runtime/Interpreter/Init.hs` | `wasm32` | wasm-dyld vs internal-interpreter init arm | host op / impl module (wasi has none); sibling of `Wasm.hs` |
 | `GHC/Runtime/Interpreter/Wasm.hs` | `mingw32` | POSIX-only wasm interpreter pieces | host op / impl module (wasi has none) |
 | `GHC/Linker/Loader.hs` | `mingw32`, `wasm32` | `getSystemDirectory`; DLL/load specifics | mix: host op + build-feature (`CAN_LOAD_DLL`, §4.3) |
 | `GHC/Driver/Session.hs` | `linux`,`mingw32` | `-rdynamic`/`--export-all-symbols`; path split marker | target query on `Platform` + host path-sep op |
