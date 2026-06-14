@@ -4,10 +4,7 @@
 
 -}
 
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables, LambdaCase #-}
-
-#include <ghcautoconf.h>
 
 -- | Defines basic functions for printing error messages.
 --
@@ -57,6 +54,7 @@ import GHC.Stack
 import GHC.Utils.Outputable
 import GHC.Utils.Panic.Plain
 import GHC.Utils.Constants
+import GHC.Platform.Host.Ops ( theHostOps, hostInstallSignalHandlers )
 
 import GHC.Utils.Exception as Exception
 
@@ -65,14 +63,6 @@ import qualified Control.Monad.Catch as MC
 import Control.Concurrent
 import Data.Typeable      ( cast )
 import System.IO.Unsafe
-
-#if !defined(mingw32_HOST_OS)
-import System.Posix.Signals as S
-#endif
-
-#if defined(mingw32_HOST_OS)
-import GHC.ConsoleHandler as S
-#endif
 
 import System.Mem.Weak  ( deRefWeak )
 
@@ -224,25 +214,22 @@ tryMost action = do r <- try action
                                         Nothing -> throwIO se
                         Right v -> return (Right v)
 
--- | We use reference counting for signal handlers
+-- | We use reference counting for signal handlers. The stored action, returned
+-- by the host abstraction when handlers are installed, uninstalls them again.
 {-# NOINLINE signalHandlersRefCount #-}
-#if !defined(mingw32_HOST_OS)
-signalHandlersRefCount :: MVar (Word, Maybe (S.Handler,S.Handler
-                                            ,S.Handler,S.Handler))
-#else
-signalHandlersRefCount :: MVar (Word, Maybe S.Handler)
-#endif
+signalHandlersRefCount :: MVar (Word, Maybe (IO ()))
 signalHandlersRefCount = unsafePerformIO $ newMVar (0,Nothing)
 
 
 -- | Temporarily install standard signal handlers for catching ^C, which just
 -- throw an exception in the current thread.
+--
+-- The platform-specific work — POSIX signal handlers, the Windows console-ctrl
+-- handler, or nothing on hosts without @\<signal.h\>@ (e.g. wasm32-wasi) — is
+-- delegated to 'hostInstallSignalHandlers'; see "GHC.Platform.Host.Ops". The
+-- reference counting that keeps the handlers shared across nested calls stays
+-- here.
 withSignalHandlers :: ExceptionMonad m => m a -> m a
-#if !defined(HAVE_SIGNAL_H)
--- No signal functionality exist on the host platform (e.g. on
--- wasm32-wasi), so don't attempt to set up signal handlers
-withSignalHandlers = id
-#else
 withSignalHandlers act = do
   main_thread <- liftIO myThreadId
   wtid <- liftIO (mkWeakThreadId main_thread)
@@ -254,55 +241,26 @@ withSignalHandlers act = do
           Nothing -> return ()
           Just t  -> throwTo t UserInterrupt
 
-#if !defined(mingw32_HOST_OS)
-  let installHandlers = do
-        let installHandler' a b = installHandler a b Nothing
-        hdlQUIT <- installHandler' sigQUIT  (Catch interrupt)
-        hdlINT  <- installHandler' sigINT   (Catch interrupt)
-        -- see #3656; in the future we should install these automatically for
-        -- all Haskell programs in the same way that we install a ^C handler.
-        let fatal_signal n = throwTo main_thread (Signal (fromIntegral n))
-        hdlHUP  <- installHandler' sigHUP   (Catch (fatal_signal sigHUP))
-        hdlTERM <- installHandler' sigTERM  (Catch (fatal_signal sigTERM))
-        return (hdlQUIT,hdlINT,hdlHUP,hdlTERM)
-
-  let uninstallHandlers (hdlQUIT,hdlINT,hdlHUP,hdlTERM) = do
-        _ <- installHandler sigQUIT  hdlQUIT Nothing
-        _ <- installHandler sigINT   hdlINT  Nothing
-        _ <- installHandler sigHUP   hdlHUP  Nothing
-        _ <- installHandler sigTERM  hdlTERM Nothing
-        return ()
-#else
-  -- GHC 6.3+ has support for console events on Windows
-  -- NOTE: running GHCi under a bash shell for some reason requires
-  -- you to press Ctrl-Break rather than Ctrl-C to provoke
-  -- an interrupt.  Ctrl-C is getting blocked somewhere, I don't know
-  -- why --SDM 17/12/2004
-  let sig_handler ControlC = interrupt
-      sig_handler Break    = interrupt
-      sig_handler _        = return ()
-
-  let installHandlers   = installHandler (Catch sig_handler)
-  let uninstallHandlers = installHandler -- directly install the old handler
-#endif
+      -- see #3656; in the future we should install these automatically for
+      -- all Haskell programs in the same way that we install a ^C handler.
+      fatalSignal n = throwTo main_thread (Signal n)
 
   -- install signal handlers if necessary
   let mayInstallHandlers = liftIO $ modifyMVar_ signalHandlersRefCount $ \case
         (0,Nothing)     -> do
-          hdls <- installHandlers
-          return (1,Just hdls)
+          uninstall <- hostInstallSignalHandlers theHostOps interrupt fatalSignal
+          return (1,Just uninstall)
         (c,oldHandlers) -> return (c+1,oldHandlers)
 
   -- uninstall handlers if necessary
   let mayUninstallHandlers = liftIO $ modifyMVar_ signalHandlersRefCount $ \case
-        (1,Just hdls)   -> do
-          _ <- uninstallHandlers hdls
+        (1,Just uninstall)   -> do
+          uninstall
           return (0,Nothing)
         (c,oldHandlers) -> return (c-1,oldHandlers)
 
   mayInstallHandlers
   act `MC.finally` mayUninstallHandlers
-#endif
 
 callStackDoc :: HasCallStack => SDoc
 callStackDoc = prettyCallStackDoc callStack

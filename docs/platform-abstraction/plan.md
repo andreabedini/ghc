@@ -268,7 +268,11 @@ pid <- hostGetProcessID (hostOps host)   -- no CPP; impl lives in Host/{Posix,Wi
 (POSIX signals / Windows console handler / none on wasm-wasi) collapses to
 `hostWithSignals`, with the "none" case being `id` in the relevant impl. Note
 `HAVE_SIGNAL_H` here is a *host capability*, correctly modelled as a host op, not
-a separate feature flag.
+a separate feature flag. (Implemented as
+`hostInstallSignalHandlers :: IO () -> (Int -> IO ()) -> IO (IO ())`: the generic
+reference-counting and `ExceptionMonad` bracket logic stays in `Panic`, and only
+the platform-specific install/uninstall — returning an uninstall action, or a
+no-op on wasm-wasi — is delegated. This keeps the impl modules in plain `IO`.)
 
 **Terminal colour (`GHC/SysTools/Terminal.hs`):** ANSI vs Win32 console →
 `hostStderrSupportsColor`.

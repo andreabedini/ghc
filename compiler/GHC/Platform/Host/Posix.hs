@@ -1,3 +1,7 @@
+{-# LANGUAGE CPP #-}
+
+#include <ghcautoconf.h>
+
 -- | POSIX implementation of the host operations declared in
 -- "GHC.Platform.Host.Ops". Selected on non-Windows hosts. Bodies here are moved
 -- verbatim from their original (POSIX) @#ifdef@ branches in the compiler.
@@ -7,6 +11,7 @@ module GHC.Platform.Host.Posix
   , touch
   , mangleGccPathEnv
   , stderrSupportsAnsiColors
+  , installSignalHandlers
   ) where
 
 import GHC.Prelude
@@ -16,6 +21,10 @@ import qualified System.Posix.Files as POSIX
 import System.Posix.IO
 import System.Environment (lookupEnv)
 import System.IO (hIsTerminalDevice, stderr)
+
+#if defined(HAVE_SIGNAL_H)
+import System.Posix.Signals
+#endif
 
 -- | (POSIX branch moved verbatim from "GHC.Utils.TmpFs".)
 getProcessID :: IO Int
@@ -56,3 +65,26 @@ stderrSupportsAnsiColors = do
   isTerminal <- hIsTerminalDevice stderr
   term <- lookupEnv "TERM"
   pure $ isTerminal && term /= Just "dumb"
+
+-- | (POSIX signal-handler install/uninstall, moved from "GHC.Utils.Panic".)
+-- On hosts without @<signal.h>@ (e.g. wasm32-wasi) this is a no-op, matching
+-- the previous @HAVE_SIGNAL_H@ guard.
+installSignalHandlers :: IO () -> (Int -> IO ()) -> IO (IO ())
+#if !defined(HAVE_SIGNAL_H)
+installSignalHandlers _ _ = pure (pure ())
+#else
+installSignalHandlers interrupt fatalSignal = do
+  let installHandler' a b = installHandler a b Nothing
+  hdlQUIT <- installHandler' sigQUIT  (Catch interrupt)
+  hdlINT  <- installHandler' sigINT   (Catch interrupt)
+  -- see #3656; in the future we should install these automatically for
+  -- all Haskell programs in the same way that we install a ^C handler.
+  hdlHUP  <- installHandler' sigHUP   (Catch (fatalSignal (fromIntegral sigHUP)))
+  hdlTERM <- installHandler' sigTERM  (Catch (fatalSignal (fromIntegral sigTERM)))
+  pure $ do
+    _ <- installHandler sigQUIT  hdlQUIT Nothing
+    _ <- installHandler sigINT   hdlINT  Nothing
+    _ <- installHandler sigHUP   hdlHUP  Nothing
+    _ <- installHandler sigTERM  hdlTERM Nothing
+    pure ()
+#endif

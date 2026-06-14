@@ -58,6 +58,14 @@ data HostOps = HostOps
       -- ^ Whether ANSI colour escape sequences can be used on @stderr@
       --   (terminal probe on POSIX, console-mode/VTP handling on Windows). Was:
       --   a @mingw32@ split in "GHC.SysTools.Terminal".
+  , hostInstallSignalHandlers :: IO () -> (Int -> IO ()) -> IO (IO ())
+      -- ^ @hostInstallSignalHandlers interrupt fatalSignal@ installs the ^C /
+      --   terminate handlers and returns an action that uninstalls them. The
+      --   @interrupt@ action handles ^C\/SIGINT\/SIGQUIT; @fatalSignal n@
+      --   handles fatal signals (e.g. SIGHUP\/SIGTERM). POSIX signals vs the
+      --   Windows console-ctrl handler vs nothing on hosts without @\<signal.h\>@
+      --   (e.g. wasm32-wasi). Was: a @mingw32@\/@HAVE_SIGNAL_H@ split in
+      --   "GHC.Utils.Panic".
   }
 
 -- | The 'HostOps' for the platform this @ghc@ was built to run on.
@@ -71,4 +79,5 @@ theHostOps = HostOps
   , hostTouch            = Impl.touch
   , hostMangleGccPathEnv = Impl.mangleGccPathEnv
   , hostStderrSupportsColor = Impl.stderrSupportsAnsiColors
+  , hostInstallSignalHandlers = Impl.installSignalHandlers
   }

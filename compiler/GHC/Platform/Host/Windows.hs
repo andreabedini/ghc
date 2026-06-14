@@ -9,6 +9,7 @@ module GHC.Platform.Host.Windows
   , touch
   , mangleGccPathEnv
   , stderrSupportsAnsiColors
+  , installSignalHandlers
   ) where
 
 import GHC.Prelude
@@ -22,6 +23,8 @@ import GHC.Utils.Exception (try)
 import Foreign (Ptr, peek, with)
 import qualified Graphics.Win32 as Win32
 import qualified System.Win32 as Win32
+
+import GHC.ConsoleHandler
 
 -- | (Windows branch moved verbatim from "GHC.Utils.TmpFs".)
 -- Relies on @Int == Int32@ on Windows.
@@ -101,3 +104,21 @@ foreign import ccall unsafe "windows.h GetConsoleMode" c_GetConsoleMode
 
 foreign import ccall unsafe "windows.h SetConsoleMode" c_SetConsoleMode
   :: Win32.HANDLE -> Win32.DWORD -> IO Win32.BOOL
+
+-- | (Windows console-ctrl handler install/uninstall, moved from
+-- "GHC.Utils.Panic".) GHC 6.3+ has support for console events on Windows.
+-- NOTE: running GHCi under a bash shell for some reason requires you to press
+-- Ctrl-Break rather than Ctrl-C to provoke an interrupt. Ctrl-C is getting
+-- blocked somewhere, I don't know why --SDM 17/12/2004.
+--
+-- The @fatalSignal@ argument is unused on Windows; only the @interrupt@ action
+-- (^C / Break) is wired up.
+installSignalHandlers :: IO () -> (Int -> IO ()) -> IO (IO ())
+installSignalHandlers interrupt _fatalSignal = do
+  let sig_handler ControlC = interrupt
+      sig_handler Break    = interrupt
+      sig_handler _        = return ()
+  old <- installHandler (Catch sig_handler)
+  pure $ do
+    _ <- installHandler old  -- directly reinstall the old handler
+    pure ()
