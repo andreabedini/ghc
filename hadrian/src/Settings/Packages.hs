@@ -320,15 +320,12 @@ rtsPackageArgs = package rts ? do
           , notM (targetSupportsSMP stage)   ? arg "-optc-DNOSMP"
           , isWinHost                        ? arg "-optl-Wl,--disable-runtime-pseudo-reloc"
 
-            -- See Note [AutoApply.cmm for vectors] in genapply/Main.hs
-            --
-            -- In particular, we **do not** pass -mavx when compiling
-            -- AutoApply_V16.cmm, as that would lock out targets with SSE2 but not AVX.
-          , inputs ["**/AutoApply_V32.cmm"] ? pure [ "-mavx2"    | x86 ]
-          , inputs ["**/AutoApply_V64.cmm"] ? pure [ "-mavx512f" | x86 ]
-
-          , inputs ["**/Jumps_V32.cmm"] ? pure [ "-mavx2"    | x86 ]
-          , inputs ["**/Jumps_V64.cmm"] ? pure [ "-mavx512f" | x86 ]
+            -- NB: the vector .cmm files used to need -mavx2/-mavx512f here,
+            -- per file, matched on filename.  They now carry a per-procedure
+            -- target attribute, guarded by the same REG_YMM1/REG_ZMM1 test
+            -- that decides whether the procedure uses those registers at all.
+            -- See Note [Cmm target attributes] in GHC.Cmm, rts/Jumps.h, and
+            -- Note [AutoApply.cmm for vectors] in genapply/Main.hs.
           ]
 
     let cArgs = mconcat
