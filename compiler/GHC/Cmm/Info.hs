@@ -154,7 +154,10 @@ mkInfoTable profile proc@(CmmProc infos entry_lbl live blocks)
             [CmmProc (rawProcInfo (mapFromList raw_infos)) entry_lbl live blocks])
 
   where
-   rawProcInfo tbls = RawCmmProcInfo { raw_info_tbls = tbls }
+   -- Carry the procedure's attributes into the raw header.
+   -- See Note [Cmm target attributes] in GHC.Cmm.
+   rawProcInfo tbls = RawCmmProcInfo { raw_info_tbls  = tbls
+                                     , raw_proc_attrs = proc_attrs infos }
    platform = profilePlatform profile
    do_one_info (lbl,itbl) = do
      (top_decls, (std_info, extra_bits)) <-
