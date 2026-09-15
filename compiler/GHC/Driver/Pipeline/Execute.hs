@@ -40,7 +40,6 @@ import GHC.Utils.Logger
 import GHC.Utils.TmpFs
 import GHC.Platform
 import Data.List (intercalate, isInfixOf)
-import qualified Data.List.NonEmpty as NE
 import GHC.Unit.Env
 import GHC.Unit.Home.ModInfo
 import GHC.Utils.Error
@@ -58,6 +57,7 @@ import GHC.Unit.Home
 import GHC.Data.Maybe
 import GHC.Iface.Make
 import GHC.Driver.Config.Parser
+import GHC.Driver.Config.CmmToLlvm (llvmTargetFeatureList)
 import GHC.Parser.Header
 import GHC.Data.StringBuffer
 import GHC.Data.OsPath (unsafeEncodeUtf)
@@ -968,35 +968,7 @@ llvmOptions llvm_config llvm_version dflags =
         arch = platformArch platform
 
         attrs :: String
-        attrs = intercalate "," $ mattr
-              ++ ["+sse4.2"  | isSse4_2Enabled dflags   ]
-              ++ ["+popcnt"  | isSse4_2Enabled dflags   ]
-                   -- LLVM gates POPCNT instructions behind the popcnt flag,
-                   -- while the GHC NCG (as well as GCC, Clang) gates it
-                   -- behind SSE4.2 instead.
-              ++ ["+sse4.1"  | isSse4_1Enabled dflags   ]
-              ++ ["+ssse3"   | isSsse3Enabled dflags    ]
-              ++ ["+sse3"    | isSse3Enabled dflags     ]
-              ++ ["+sse2"    | isSse2Enabled platform   ]
-              ++ ["+sse"     | isSseEnabled platform    ]
-              ++ ["+avx512f" | isAvx512fEnabled dflags  ]
-              ++ ["+evex512" | isAvx512fEnabled dflags
-                             , maybe False (>= LlvmVersion (18 NE.:| [])) llvm_version ]
-                   -- +evex512 is recognized by LLVM 18 or newer and needed on macOS (#26410).
-                   -- It may become deprecated in a future LLVM version, though.
-              ++ ["+avx2"    | isAvx2Enabled dflags     ]
-              ++ ["+avx"     | isAvxEnabled dflags      ]
-              ++ ["+avx512bw"| isAvx512bwEnabled dflags ]
-              ++ ["+avx512cd"| isAvx512cdEnabled dflags ]
-              ++ ["+avx512dq"| isAvx512dqEnabled dflags ]
-              ++ ["+avx512er"| isAvx512erEnabled dflags ]
-              ++ ["+avx512pf"| isAvx512pfEnabled dflags ]
-              ++ ["+avx512vl"| isAvx512vlEnabled dflags ]
-              -- For AArch64 +fma is not a option (it's unconditionally available).
-              ++ ["+fma"     | isFmaEnabled dflags && (arch /= ArchAArch64) ]
-              ++ ["+bmi"     | isBmiEnabled dflags      ]
-              ++ ["+bmi2"    | isBmi2Enabled dflags     ]
-              ++ ["+gfni"    | isGfniEnabled dflags     ]
+        attrs = intercalate "," $ mattr ++ llvmTargetFeatureList dflags llvm_version
 
         abi :: String
         abi = case platformArch (targetPlatform dflags) of
