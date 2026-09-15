@@ -19,13 +19,13 @@ import GHC.Cmm
 type NatCmm instr
         = GenCmmGroup
                 RawCmmStatics
-                (LabelMap RawCmmStatics)
+                RawCmmProcInfo
                 (ListGraph instr)
 
 type NatCmmDecl statics instr
         = GenCmmDecl
                 statics
-                (LabelMap RawCmmStatics)
+                RawCmmProcInfo
                 (ListGraph instr)
 
 type NatBasicBlock instr

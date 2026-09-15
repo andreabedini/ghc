@@ -9,6 +9,7 @@ module GHC.Cmm (
      CmmGraph, GenCmmGraph, GenGenCmmGraph(..),
      toBlockMap, revPostorder, toBlockList,
      CmmBlock, RawCmmDecl,
+     RawCmmProcInfo(..),
      Section(..), SectionType(..),
      GenCmmStatics(..), type CmmStatics, type RawCmmStatics, CmmStatic(..),
      SectionProtection(..), sectionProtection,
@@ -77,7 +78,7 @@ type CmmGroup     = GenCmmGroup CmmStatics    CmmTopInfo               CmmGraph
 -- | Cmm group with SRTs
 type CmmGroupSRTs = GenCmmGroup RawCmmStatics CmmTopInfo               CmmGraph
 -- | "Raw" cmm group (TODO (osa): not sure what that means)
-type RawCmmGroup  = GenCmmGroup RawCmmStatics (LabelMap RawCmmStatics) CmmGraph
+type RawCmmGroup  = GenCmmGroup RawCmmStatics RawCmmProcInfo CmmGraph
 
 -----------------------------------------------------------------------------
 --  CmmDecl, GenCmmDecl
@@ -130,8 +131,22 @@ cmmDataDeclCmmDecl = \ case
 type RawCmmDecl
    = GenCmmDecl
         RawCmmStatics
-        (LabelMap RawCmmStatics)
+        RawCmmProcInfo
         CmmGraph
+
+-- | The header of a \"raw\" 'CmmProc', i.e. after 'GHC.Cmm.Info.cmmToRawCmm'
+-- has turned the info tables into static data.
+--
+-- This used to be a bare @LabelMap RawCmmStatics@.  It is a record so that
+-- per-procedure information can be added without touching every backend
+-- again.
+data RawCmmProcInfo = RawCmmProcInfo
+     { raw_info_tbls  :: !(LabelMap RawCmmStatics)
+       -- ^ The procedure's info tables, as static data.
+     }
+
+instance OutputableP Platform RawCmmProcInfo where
+    pdoc platform (RawCmmProcInfo tbls) = pdoc platform tbls
 
 -----------------------------------------------------------------------------
 --     Graphs
