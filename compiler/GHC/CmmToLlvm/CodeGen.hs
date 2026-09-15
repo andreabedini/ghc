@@ -62,7 +62,7 @@ genLlvmProc :: RawCmmDecl -> LlvmM [LlvmCmmDecl]
 genLlvmProc (CmmProc infos lbl live graph)
   | Just blocks <- nonEmpty $ toBlockListEntryFirstFalseFallthrough graph = do
     (lmblocks, lmdata) <- basicBlocksCodeGen live blocks
-    let info = mapLookup (g_entry graph) infos
+    let info = mapLookup (g_entry graph) (raw_info_tbls infos)
         proc = CmmProc info lbl live (ListGraph lmblocks)
     return (proc:lmdata)
 

@@ -24,7 +24,7 @@ import GHC.Types.Literal.Floating
 pprNatCmmDecl :: forall doc. (IsDoc doc) => NCGConfig -> NatCmmDecl RawCmmStatics Instr -> doc
 pprNatCmmDecl config (CmmData section dats) =
   pprSectionAlign config section $$ pprDatas config dats
-pprNatCmmDecl config proc@(CmmProc top_info lbl _ (ListGraph blocks)) =
+pprNatCmmDecl config proc@(CmmProc (RawCmmProcInfo { raw_info_tbls = top_info }) lbl _ (ListGraph blocks)) =
   let platform = ncgPlatform config
 
       pprProcAlignment :: doc

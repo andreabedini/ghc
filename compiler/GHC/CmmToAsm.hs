@@ -661,7 +661,7 @@ cmmNativeGen logger ncgImpl us fileIds dbgMap cmm count
                 invertConds = invertCondBranches ncgImpl optimizedCFG
                 invert top@CmmData {} = top
                 invert (CmmProc info lbl live (ListGraph blocks)) =
-                    CmmProc info lbl live (ListGraph $ invertConds info blocks)
+                    CmmProc info lbl live (ListGraph $ invertConds (raw_info_tbls info) blocks)
 
         -- generate unwinding information from cmm
         let unwinds :: BlockMap [UnwindPoint]
@@ -836,10 +836,10 @@ shortcutBranches config ncgImpl tops weights
     mapping = mapUnions mappings :: LabelMap jumpDest
     mappingBid = fmap (getJumpDestBlockId ncgImpl) mapping
 
-build_mapping :: forall instr t d statics jumpDest.
+build_mapping :: forall instr d statics jumpDest.
                  NcgImpl statics instr jumpDest
-              -> GenCmmDecl d (LabelMap t) (ListGraph instr)
-              -> (GenCmmDecl d (LabelMap t) (ListGraph instr)
+              -> GenCmmDecl d RawCmmProcInfo (ListGraph instr)
+              -> (GenCmmDecl d RawCmmProcInfo (ListGraph instr)
                  ,LabelMap jumpDest)
 build_mapping _ top@(CmmData _ _) = (top, mapEmpty)
 build_mapping _ (CmmProc info lbl live (ListGraph []))
@@ -868,7 +868,7 @@ build_mapping ncgImpl (CmmProc info lbl live (ListGraph (head:blocks)))
     split (s, shortcut_blocks, others) other = (s, shortcut_blocks, other : others)
 
     -- do not eliminate blocks that have an info table
-    has_info l = mapMember l info
+    has_info l = mapMember l (raw_info_tbls info)
 
     -- build a mapping from BlockId to JumpDest for shorting branches
     mapping = mapFromList shortcut_blocks

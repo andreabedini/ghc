@@ -75,7 +75,8 @@ cmmToC platform tops = (vcat $ intersperse blankLine $ map (pprTop platform) top
 --
 pprTop :: Platform -> RawCmmDecl -> SDoc
 pprTop platform = \case
-  (CmmProc infos clbl _in_live_regs graph) ->
+  (CmmProc (RawCmmProcInfo { raw_info_tbls = infos })
+           clbl _in_live_regs graph) ->
     (case mapLookup (g_entry graph) infos of
        Nothing -> empty
        Just (CmmStaticsRaw info_clbl info_dat) ->
