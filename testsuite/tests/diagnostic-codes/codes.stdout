@@ -12,7 +12,6 @@
 [GHC-58181] is untested (constructor = DsOrphanRule)
 [GHC-19551] is untested (constructor = DsAggregatedViewExpressions)
 [GHC-93315] is untested (constructor = UselessSpecialiseForClassMethodSelector)
-[GHC-09848] is untested (constructor = PsErrCmmParser)
 [GHC-66418] is untested (constructor = PsErrParseErrorOnInput)
 [GHC-85316] is untested (constructor = PsErrMalformedDecl)
 [GHC-49196] is untested (constructor = DriverFileNotFound)

@@ -28,6 +28,15 @@ data LlvmCgConfig = LlvmCgConfig
   , llvmCgLlvmTarget        :: !String       -- ^ target triple passed to LLVM
   , llvmCgLlvmConfig        :: !LlvmConfig   -- ^ Supported LLVM configurations.
                                              -- see Note [LLVM configuration]
+  , llvmCgTargetFeatures    :: ![String]     -- ^ The module-wide LLVM target
+                                             -- features, as passed to llc via
+                                             -- -mattr.  A per-procedure
+                                             -- \"target-features\" attribute
+                                             -- replaces -mattr for that
+                                             -- function, so it has to repeat
+                                             -- these.  See
+                                             -- Note [Cmm target attributes]
+                                             -- in GHC.Cmm.
   }
 
 data LlvmTarget = LlvmTarget

@@ -26,6 +26,7 @@ module GHC.CmmToLlvm.Base (
 
         cmmToLlvmType, widthToLlvmFloat, widthToLlvmInt, llvmFunTy,
         llvmFunSig, llvmFunArgs, llvmStdFunAttrs, llvmFunAlign, llvmInfAlign,
+        LlvmProcInfo(..), llvmTargetFeatureAttrs,
         llvmPtrBits, tysToParams, llvmFunSection, padLiveArgs, isFPR,
 
         lookupRegUse,
@@ -52,6 +53,7 @@ import GHC.Cmm              hiding ( succ )
 import GHC.Cmm.Utils (globalRegsOverlap)
 import GHC.Utils.Outputable as Outp
 import GHC.Platform
+import GHC.Platform.ArchOS (stringEncodeArch)
 import GHC.Types.Unique.FM
 import GHC.Types.Unique
 import GHC.Utils.BufHandle   ( BufHandle )
@@ -63,7 +65,7 @@ import Control.Monad.Trans.State (StateT (..))
 import Control.Applicative (Alternative((<|>)))
 import Data.Maybe (fromJust, mapMaybe)
 
-import Data.List (find, isPrefixOf)
+import Data.List (find, isPrefixOf, intercalate, nub)
 import qualified Data.List.NonEmpty as NE
 import Data.Ord (comparing)
 import qualified Control.Monad.IO.Class as IO
@@ -72,7 +74,15 @@ import qualified Control.Monad.IO.Class as IO
 -- * Some Data Types
 --
 
-type LlvmCmmDecl = GenCmmDecl [LlvmData] (Maybe RawCmmStatics) (ListGraph LlvmStatement)
+type LlvmCmmDecl = GenCmmDecl [LlvmData] LlvmProcInfo (ListGraph LlvmStatement)
+
+-- | The header of an LLVM procedure: its info table, if any, and the
+-- attributes it carried in the Cmm source.
+-- See Note [Cmm target attributes] in GHC.Cmm.
+data LlvmProcInfo = LlvmProcInfo
+     { lpi_info_tbl   :: Maybe RawCmmStatics
+     , lpi_proc_attrs :: CmmProcAttrs
+     }
 type LlvmBasicBlock = GenBasicBlock LlvmStatement
 
 -- | Global registers live on proc entry
@@ -261,6 +271,28 @@ padLiveArgs platform live =
 -- | Llvm standard fun attributes
 llvmStdFunAttrs :: [LlvmFuncAttr]
 llvmStdFunAttrs = [NoUnwind]
+
+-- | A procedure's Cmm target attributes as LLVM function attributes.  Implied
+-- features are spelled out, since LLVM does not infer them.
+-- See Note [Cmm target attributes] in GHC.Cmm.
+llvmTargetFeatureAttrs :: LlvmCgConfig -> CLabel -> CmmProcAttrs -> [LlvmFuncAttr]
+llvmTargetFeatureAttrs _ _ (CmmProcAttrs []) = []
+llvmTargetFeatureAttrs cfg lbl attrs@(CmmProcAttrs fs)
+  -- On a non-x86 target LLVM would only warn about the unrecognised feature
+  -- and then emit scalar code, so refuse here as the NCG does.
+  | not (cmmTargetFeaturesSupportedOn arch fs)
+  = checkNoCmmProcAttrs ("LLVM on " ++ stringEncodeArch arch)
+      (pdoc (llvmCgPlatform cfg) lbl) attrs []
+  | otherwise
+  = [ TargetFeatures (mkFastString (intercalate "," (nub (base ++ requested)))) ]
+  where
+    arch = platformArch (llvmCgPlatform cfg)
+    -- A function-level "target-features" attribute replaces the module's
+    -- -mattr for that function, so repeat the module's features here.
+    -- See Note [Cmm target attributes] in GHC.Cmm.
+    base      = llvmCgTargetFeatures cfg
+    requested = [ '+' : cmmTargetFeatureName f
+                | f <- nub (concatMap cmmTargetFeatureImplies fs) ]
 
 -- | Convert a list of types to a list of function parameters
 -- (each with no parameter attributes)

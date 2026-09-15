@@ -199,7 +199,8 @@ data Liveness
 -- | Stash regs live on entry to each basic block in the info part of the cmm code.
 data LiveInfo
         = LiveInfo
-                RawCmmProcInfo            -- cmm info table static stuff
+                RawCmmProcInfo            -- cmm info table static stuff, plus
+                                          -- the proc's target attributes
                 [BlockId]                 -- entry points (first one is the
                                           -- entry point for the proc).
                 (BlockMap Regs)       -- argument locals live on entry to this block

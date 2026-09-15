@@ -21,3 +21,26 @@ test('T24474-cmm-opt-order', cmm_src, compile, ['-optc-DFOO '
                                                 '-optCmmP-UFOO '
                                                 '-optCmmP-UBAR '
                                                 '-optc-DBAR'])
+
+# See Note [Cmm target attributes] in GHC.Cmm.
+# 256-bit vectors need AVX2, so with no -mavx2 on the command line this only
+# compiles if the attribute reaches the code generator.
+# NB: unregisterised builds route Cmm through the C backend, which rejects the
+# attribute, so this must not run there.
+test('CmmTargetAttr',
+     [cmm_src,
+      unless(arch('x86_64') or arch('i386'), skip),
+      when(unregisterised(), skip)],
+     compile, [''])
+
+# The LLVM backend must emit a function-level "target-features" attribute.
+# NB: that attribute replaces llc's -mattr for the function, so it has to
+# repeat the module-wide features.
+test('CmmTargetAttrLlvm',
+     [cmm_src,
+      grep_errmsg(r'(target-features)', [1]),
+      unless(arch('x86_64') or arch('i386'), skip),
+      when(unregisterised(), skip),
+      unless(have_llvm(), skip),
+      only_ways(llvm_ways)],
+     compile, ['-ddump-llvm'])

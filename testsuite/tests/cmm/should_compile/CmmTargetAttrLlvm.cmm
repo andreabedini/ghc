@@ -1,0 +1,11 @@
+/* The LLVM backend must turn a Cmm target attribute into a function-level
+   "target-features" attribute.  See Note [Cmm target attributes] in GHC.Cmm.  */
+
+__attribute__((target("avx2")))
+cmmTargetAttrLlvm (bits64 p)
+{
+  vec256 v;
+  v = vec256[p];
+  vec256[p + 32] = v;
+  return ();
+}

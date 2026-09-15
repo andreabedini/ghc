@@ -35,11 +35,16 @@ initLlvmCgConfig logger config_cache dflags = do
     , llvmCgDoWarn               = wopt Opt_WarnUnsupportedLlvmVersion dflags
     , llvmCgLlvmTarget           = platformMisc_llvmTarget $! platformMisc dflags
     , llvmCgLlvmConfig           = llvm_config
+    , llvmCgTargetFeatures       = llvmTargetFeatureList dflags version
     }
 
--- | The LLVM target features implied by the current 'DynFlags', as passed to
--- @llc@ and @opt@ via @-mattr@.  See
--- 'GHC.Driver.Pipeline.Execute.llvmOptions'.
+-- | The LLVM target features implied by the current 'DynFlags'.
+--
+-- Two consumers: the @-mattr@ passed to @llc@ and @opt@
+-- ('GHC.Driver.Pipeline.Execute.llvmOptions'), and the per-procedure
+-- @\"target-features\"@ attribute.  The latter replaces @-mattr@ for that
+-- function, so both have to come from the same list.
+-- See Note [Cmm target attributes] in GHC.Cmm.
 llvmTargetFeatureList :: DynFlags -> Maybe LlvmVersion -> [String]
 llvmTargetFeatureList dflags llvm_version =
        ["+sse4.2"  | isSse4_2Enabled dflags   ]
